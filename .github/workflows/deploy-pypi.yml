@@ -1,0 +1,402 @@
+name: Build and publish Python distributions
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      checkout_ref:
+        description: Exact commit or tag to build instead of the triggering ref
+        required: false
+        type: string
+      release_tag:
+        description: Matching upstream tag to create after successful builds
+        required: false
+        type: string
+      upstream_tag:
+        description: Expected upstream sing-tun tag for the release
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      checkout_ref:
+        required: false
+        type: string
+      release_tag:
+        required: false
+        type: string
+      upstream_tag:
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: distributions-${{ github.ref }}-${{ inputs.checkout_ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-source:
+    name: Validate source ownership and tooling
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.checkout_ref || github.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: adapter/go.mod
+          cache-dependency-path: adapter/go.sum
+      - name: Verify vendored upstream source
+        run: |
+          python scripts/verify_source.py
+          python scripts/sync-sing-tun.py verify
+      - name: Run synchronization tests
+        run: python -m unittest discover -s tests -v
+      - name: Test Go source and binding archive
+        working-directory: adapter
+        run: |
+          go test -race -tags with_gvisor -mod=readonly ./...
+          go build -tags with_gvisor -mod=readonly -trimpath -buildmode=c-archive -o "$RUNNER_TEMP/sing-tun.a" .
+
+  native-tests:
+    needs: validate-source
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.checkout_ref || github.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: adapter/go.mod
+          cache-dependency-path: adapter/go.sum
+      - uses: egor-tensin/setup-mingw@v3
+        if: runner.os == 'Windows'
+        with:
+          platform: x64
+      - name: Platform Go lifecycle and constructor tests
+        working-directory: adapter
+        run: go test -race -tags with_gvisor -mod=readonly ./...
+      - name: Installed native forwarding/lifecycle suite
+        env:
+          SING_TUN_REQUIRE_NATIVE: '1'
+          PYTHONUTF8: '1'
+        run: |
+          python -m pip install .
+          cd "$RUNNER_TEMP"
+          python -m unittest discover -s "$GITHUB_WORKSPACE/tests" -p test_native.py -v
+          python "$GITHUB_WORKSPACE/sample/sample.py" --outside "$GITHUB_WORKSPACE"
+
+  build-wheels:
+    name: Wheels / ${{ matrix.platform }} / ${{ matrix.arch }}
+    needs: [validate-source, native-tests]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            platform: linux
+            arch: aarch64
+          - os: windows-2025
+            platform: windows
+            arch: AMD64
+          - os: windows-11-arm
+            platform: windows
+            arch: ARM64
+          - os: macos-15-intel
+            platform: macos
+            arch: x86_64
+          - os: macos-15
+            platform: macos
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.checkout_ref || github.sha }}
+
+      # Linux builds run in manylinux containers and install Go through
+      # tool.cibuildwheel.linux.before-all instead of using the host Go.
+      - uses: actions/setup-go@v7
+        if: matrix.platform != 'linux'
+        with:
+          go-version-file: adapter/go.mod
+          check-latest: true
+          cache-dependency-path: adapter/go.sum
+
+      - uses: egor-tensin/setup-mingw@v3
+        if: matrix.platform == 'windows' && matrix.arch == 'AMD64'
+        with:
+          platform: x64
+
+      - name: Install LLVM-MinGW for Windows ARM64
+        if: matrix.platform == 'windows' && matrix.arch == 'ARM64'
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'llvm-mingw-20260616-ucrt-aarch64.zip'
+          $destination = Join-Path $env:RUNNER_TEMP 'llvm-mingw'
+          $url = 'https://github.com/mstorsjo/llvm-mingw/releases/download/20260616/llvm-mingw-20260616-ucrt-aarch64.zip'
+          $expectedHash = '312593669435bd0bfc1a43ac3fba23c8b27e0610bade88b2738e5a01702a99ba'
+
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actualHash = (Get-FileHash -Path $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne $expectedHash) {
+            throw "LLVM-MinGW checksum mismatch: expected $expectedHash, got $actualHash"
+          }
+
+          Expand-Archive -Path $archive -DestinationPath $destination
+          $gcc = Get-ChildItem -Path $destination -Filter gcc.exe -Recurse |
+            Where-Object { $_.Directory.Name -eq 'bin' } |
+            Select-Object -First 1
+          if (-not $gcc) {
+            throw 'Could not locate LLVM-MinGW gcc.exe'
+          }
+
+          $toolchainBin = $gcc.Directory.FullName
+          $target = & (Join-Path $toolchainBin 'gcc.exe') -dumpmachine
+          if ($target -ne 'aarch64-w64-windows-gnu') {
+            throw "Unexpected LLVM-MinGW target: $target"
+          }
+
+          $toolchainBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      # The legacy CPython 3.8 arm64 build uses this native interpreter instead
+      # of running an Intel interpreter under Rosetta.
+      - uses: actions/setup-python@v7
+        if: matrix.platform == 'macos' && matrix.arch == 'arm64'
+        with:
+          python-version: "3.8"
+
+      # cibuildwheel 4 removed CPython 3.8 and the experimental 3.13t build.
+      # Keep this narrowly scoped compatibility pass until those wheels are no
+      # longer part of the supported platform matrix.
+      - name: Build and test legacy CPython wheels
+        uses: pypa/cibuildwheel@v3.4.1
+        with:
+          output-dir: wheelhouse
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_BUILD: "cp38-* cp313t-*"
+          CIBW_ENABLE: cpython-freethreading
+
+      - name: Build and test current CPython wheels
+        uses: pypa/cibuildwheel@v4.2.1
+        with:
+          output-dir: wheelhouse
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+
+      - name: Store wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-package-wheels-${{ matrix.platform }}-${{ matrix.arch }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+  build-sdist:
+    name: Source distribution
+    needs: [validate-source, native-tests]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.checkout_ref || github.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          check-latest: true
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: adapter/go.mod
+          cache-dependency-path: adapter/go.sum
+      - name: Build and check source distribution
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build --sdist --outdir dist
+          python -m twine check dist/*
+          mkdir "$RUNNER_TEMP/sdist"
+          tar -xzf dist/*.tar.gz -C "$RUNNER_TEMP/sdist"
+          python -m pip wheel --no-deps "$RUNNER_TEMP"/sdist/* -w "$RUNNER_TEMP/sdist-wheel"
+          python -m pip install --no-deps "$RUNNER_TEMP"/sdist-wheel/*.whl
+          cd "$RUNNER_TEMP"
+          SING_TUN_REQUIRE_NATIVE=1 python -m unittest discover -s "$GITHUB_WORKSPACE/tests" -p test_native.py -v
+          python "$GITHUB_WORKSPACE/sample/sample.py" --outside "$GITHUB_WORKSPACE"
+      - name: Store source distribution
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-package-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  store:
+    name: Store the distribution packages
+    runs-on: ubuntu-24.04
+    needs:
+      - build-wheels
+      - build-sdist
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.checkout_ref || github.sha }}
+      - name: Download all distributions
+        uses: actions/download-artifact@v8
+        with:
+          pattern: python-package-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Verify distributions are native and platform-tagged
+        run: |
+          python -m pip install packaging
+          python scripts/validate_distributions.py dist --matrix
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-package-distributions
+          path: dist/*
+          if-no-files-found: error
+
+  finalize-release:
+    name: Validate and create release tag
+    if: >-
+      ${{ !cancelled() && needs.store.result == 'success' &&
+          github.repository == 'LorenEteval/sing-tun-python' &&
+          github.event_name != 'pull_request' &&
+          ((github.ref == 'refs/heads/main' && inputs.release_tag != '') ||
+           (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) }}
+    needs: store
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Verify trusted exact commit
+        env:
+          CHECKOUT_REF: ${{ inputs.checkout_ref }}
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+          if [[ -n "$CHECKOUT_REF" ]]; then
+            [[ "$CHECKOUT_REF" =~ ^[0-9a-f]{40}$ ]]
+            [[ "$(git rev-parse HEAD)" == "$CHECKOUT_REF" ]]
+          fi
+      - name: Validate new release target
+        if: inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          UPSTREAM_TAG: ${{ inputs.upstream_tag }}
+        run: |
+          args=(guard-release --release-tag "$RELEASE_TAG")
+          if [[ -n "$UPSTREAM_TAG" ]]; then
+            args+=(--upstream-tag "$UPSTREAM_TAG")
+          fi
+          python scripts/sync-sing-tun.py "${args[@]}"
+
+      - name: Validate existing release tag
+        if: inputs.release_tag == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: >-
+          python scripts/sync-sing-tun.py guard-release
+          --release-tag "$RELEASE_TAG" --allow-existing-tag
+
+      - name: Create release tag
+        if: inputs.release_tag != ''
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag "$RELEASE_TAG" HEAD
+          git push origin "refs/tags/$RELEASE_TAG"
+
+      - name: Export release tag
+        id: release
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+  publish-to-pypi:
+    name: Publish Python distributions to PyPI
+    if: ${{ !cancelled() && needs.finalize-release.result == 'success' }}
+    needs:
+      - store
+      - finalize-release
+    runs-on: ubuntu-24.04
+    environment:
+      name: deploy-pypi
+      url: https://pypi.org/p/sing-tun
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: python-package-distributions
+          path: dist
+      - name: Publish distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: Upload to GitHub Release
+    if: ${{ !cancelled() && needs.publish-to-pypi.result == 'success' }}
+    needs:
+      - publish-to-pypi
+      - finalize-release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.checkout_ref || github.sha }}
+      - name: Download all distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: python-package-distributions
+          path: dist
+      - name: Create release notes
+        run: python scripts/sync-sing-tun.py release-notes --output release-notes.md
+      - name: Create GitHub Release and upload distributions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.finalize-release.outputs.tag }}
+        run: |
+          gh release create "$RELEASE_TAG" --repo '${{ github.repository }}' --verify-tag --notes-file release-notes.md
+          gh release upload "$RELEASE_TAG" dist/* --repo '${{ github.repository }}'

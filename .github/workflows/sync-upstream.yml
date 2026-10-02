@@ -1,0 +1,115 @@
+name: Synchronize upstream sing-tun tag
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: Optional stable sing-tun tag (defaults to the latest stable tag)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: synchronize-upstream-sing-tun
+  cancel-in-progress: false
+
+jobs:
+  synchronize:
+    name: Synchronize exact upstream release
+    if: github.repository == 'LorenEteval/sing-tun-python' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      checkout_ref: ${{ steps.commit.outputs.sha }}
+      release_required: ${{ steps.release.outputs.release_required }}
+      release_tag: ${{ steps.release.outputs.release_tag }}
+      upstream_tag: ${{ steps.release.outputs.upstream_tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Detect latest stable release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.upstream_tag }}
+        run: |
+          args=(check --github-output "$GITHUB_OUTPUT")
+          if [[ -n "$REQUESTED_TAG" ]]; then
+            args+=(--tag "$REQUESTED_TAG")
+          fi
+          python scripts/sync-sing-tun.py "${args[@]}"
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: adapter/go.mod
+          cache-dependency-path: adapter/go.sum
+      - name: Install candidate build tools
+        run: python -m pip install build
+      - name: Synchronize upstream source
+        if: steps.release.outputs.update_required == 'true'
+        env:
+          UPSTREAM_TAG: ${{ steps.release.outputs.upstream_tag }}
+        run: python scripts/sync-sing-tun.py sync --tag "$UPSTREAM_TAG"
+
+      - name: Verify synchronized source
+        env:
+          UPSTREAM_TAG: ${{ steps.release.outputs.upstream_tag }}
+        run: python scripts/sync-sing-tun.py verify --tag "$UPSTREAM_TAG"
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: adapter/go.mod
+          cache-dependency-path: adapter/go.sum
+
+      - name: Run synchronization and Go tests
+        run: |
+          python -m unittest discover -s tests -v
+          cd adapter
+          go test -race -tags with_gvisor -mod=readonly ./...
+          go build -tags with_gvisor -mod=readonly -trimpath -buildmode=c-archive -o "$RUNNER_TEMP/sing-tun.a" .
+
+      - name: Commit synchronized source
+        if: steps.release.outputs.update_required == 'true'
+        env:
+          UPSTREAM_TAG: ${{ steps.release.outputs.upstream_tag }}
+        run: |
+          git diff --check
+          git add --all -- sing-tun-go adapter/go.mod adapter/go.sum VERSION UPSTREAM_VERSION UPSTREAM_COMMIT UPSTREAM_TREE.json
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit --signoff --message "chore: sync sing-tun $UPSTREAM_TAG"
+          git push origin HEAD:main
+
+      - name: Select exact release commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build-and-publish:
+    name: Build and publish synchronized release
+    needs: synchronize
+    if: needs.synchronize.outputs.release_required == 'true'
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/deploy-pypi.yml
+    with:
+      checkout_ref: ${{ needs.synchronize.outputs.checkout_ref }}
+      release_tag: ${{ needs.synchronize.outputs.release_tag }}
+      upstream_tag: ${{ needs.synchronize.outputs.upstream_tag }}
