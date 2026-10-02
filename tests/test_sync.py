@@ -295,8 +295,7 @@ class SyncTests(unittest.TestCase):
             )
             sync.guard_release(target)
             notes = sync.release_notes()
-            self.assertIn((project / "UPSTREAM_COMMIT").read_text().strip(), notes)
-            self.assertIn("Python binding version: 0.9.6", notes)
+            self.assertEqual(notes, "Corresponds to sing-tun v0.9.6\n")
             target.release_tag = "v9.0.0"
             with self.assertRaisesRegex(sync.SyncError, "does not match"):
                 sync.guard_release(target)

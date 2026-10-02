@@ -398,5 +398,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.finalize-release.outputs.tag }}
         run: |
-          gh release create "$RELEASE_TAG" --repo '${{ github.repository }}' --verify-tag --notes-file release-notes.md
+          gh release create "$RELEASE_TAG" --repo '${{ github.repository }}' --verify-tag --title "$RELEASE_TAG" --notes-file release-notes.md
           gh release upload "$RELEASE_TAG" dist/* --repo '${{ github.repository }}'

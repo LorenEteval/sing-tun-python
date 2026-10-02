@@ -800,11 +800,7 @@ def guard_release(args: argparse.Namespace) -> None:
 
 
 def release_notes() -> str:
-    return (
-        f"Corresponds to sing-tun {current_upstream_tag()}\n"
-        f"Upstream commit: {current_upstream_commit()}\n"
-        f"Python binding version: {current_package_version()}\n"
-    )
+    return f"Corresponds to sing-tun {current_upstream_tag()}\n"
 
 
 def release_notes_command(args: argparse.Namespace) -> None:
