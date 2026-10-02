@@ -46,8 +46,11 @@ pristine sdist bytes/modes.
 
 No privileged test is enabled by default. Use only disposable Windows/macOS VMs
 or Linux namespaces/VMs, a snapshot and an explicitly owned interface. Do not run
-Engine.start on a normal host as a unit test. Prepare matching addresses/MTU/link
-state/scoped routes with host tools and record exactly created resources. Run an
+Engine.start on a normal host as a unit test. The defaults let upstream configure
+the interface and routes. To prepare matching addresses/MTU/link state/scoped
+routes with host tools, explicitly set `EXP_ExternalConfiguration=True` and
+`AutoRoute=False`. Record exactly created resources and establish proxy outbound
+bypasses before enabling TUN routing. Run an
 owned SOCKS fixture/core and IPv4/IPv6 TCP/UDP/DNS generators; verify received
 bytes rather than ping/readiness alone.
 

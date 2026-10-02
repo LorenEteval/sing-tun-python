@@ -144,7 +144,7 @@ func TestConfigurationAndDNSPolicy(t *testing.T) {
 	}
 	c := testConfig(t)
 	o := c.TunOptions
-	if o.AutoRoute || o.DNSMode != tun.DNSModeDisabled || !o.EXP_DisableDNSHijack || !o.EXP_ExternalConfiguration || len(o.Inet4Address) != 1 {
+	if !o.AutoRoute || o.DNSMode != tun.DNSModeDisabled || !o.EXP_DisableDNSHijack || o.EXP_ExternalConfiguration || len(o.Inet4Address) != 1 {
 		t.Fatal("host/DNS/prefix policy")
 	}
 }
@@ -301,6 +301,10 @@ func TestUpstreamOptionOverrides(t *testing.T) {
 	}
 	if c.StackOptions.UDPTimeout != 250*time.Millisecond || c.StackOptions.ICMPTimeout != time.Second || c.StackOptions.UDPNATMax != 7 || c.StackOptions.UDPMapping != 2 || c.StackOptions.UDPFiltering != 1 || !c.StackOptions.ForwarderBindInterface {
 		t.Fatal("native stack options changed")
+	}
+	c, err = parseConfig([]byte(`{"proxy":"socks5://127.0.0.1:1080","tun_options":{"AutoRoute":false,"EXP_ExternalConfiguration":true}}`))
+	if err != nil || c.TunOptions.AutoRoute || !c.TunOptions.EXP_ExternalConfiguration {
+		t.Fatal("external configuration override changed", err)
 	}
 	for _, options := range []string{
 		`"tun_options":{"mtu":1500}`, `"tun_options":{"MTU":true}`,

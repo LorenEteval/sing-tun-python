@@ -62,15 +62,16 @@ class NativeTests(unittest.TestCase):
     def test_upstream_option_passthrough(self):
         # Accept native routing/DNS/stack choices without starting a host device.
         original = {
-            "AutoRoute": True,
-            "EXP_ExternalConfiguration": False,
+            "AutoRoute": False,
+            "EXP_ExternalConfiguration": True,
             "DNSMode": "native",
         }
         config = Config(
             proxy="socks5://127.0.0.1:1", stack="system", tun_options=original
         )
-        original["AutoRoute"] = False
-        self.assertTrue(config.tun_options["AutoRoute"])
+        original["AutoRoute"] = True
+        self.assertFalse(config.tun_options["AutoRoute"])
+        self.assertTrue(config.tun_options["EXP_ExternalConfiguration"])
         for options in (
             {"tun_options": {"Logger": None}},
             {"stack_options": {"UDPTimeout": "bad"}},

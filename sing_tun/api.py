@@ -133,7 +133,7 @@ def capabilities():
     )
     return {
         "stacks": ("gvisor", "system", "mixed") if supported else (),
-        "host_managed_default": True,
+        "host_managed_default": False,
         "upstream_options": ("tun_options", "stack_options"),
         "dns": "SOCKS transit by default; upstream device DNS options available",
         "icmp": "upstream local echo replies; no SOCKS remote ICMP forwarding",

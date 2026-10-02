@@ -75,13 +75,19 @@ Unknown fields and incorrect types are rejected. Runtime objects such as Context
 InterfaceFinder and InterfaceMonitor are supplied by the binding and cannot be passed as JSON.
 
 Defaults are `stack="gvisor"`, `Name=""` (automatic selection), `MTU=1500`, `Inet4Address=["198.18.0.1/15"]`,
-`EXP_ExternalConfiguration=True`, `AutoRoute=False`, `DNSMode="disabled"`, `EXP_DisableDNSHijack=True`,
+`EXP_ExternalConfiguration=False`, `AutoRoute=True`, `DNSMode="disabled"`, `EXP_DisableDNSHijack=True`,
 and stack `UDPTimeout="1m"`; other upstream fields keep their zero/default values. On every supported platform an omitted or empty
 `Name` selects an unused `utun10`-`utun1024` name at startup, beginning at a random index. An explicit name is preserved.
 `engine.device_name` reports the actual interface name after opening; selection does not reserve a name against other
 processes, and a creation collision is reported by upstream. Callers may override device/network
 options, including external configuration, routing and DNS settings. Device creation and MTU/link operations remain
 platform-specific upstream behavior. Windows system/mixed startup uses upstream's firewall configuration.
+
+With these defaults, upstream configures the interface addresses and TUN routes and removes its routes on close.
+The application must arrange for the proxy core's outbound traffic to bypass the TUN and manage its DNS policy.
+To use an externally configured device and routes, pass
+`tun_options={"EXP_ExternalConfiguration": True, "AutoRoute": False}`.
+Creating/configuring the device and routes requires the appropriate platform privileges.
 
 Stack choices are `"gvisor"` (userspace TCP/UDP), `"system"` (OS TCP with upstream userspace UDP handling),
 and `"mixed"` (OS TCP plus gVisor UDP). `stack=""` delegates selection to upstream: with this build it normally chooses
@@ -101,7 +107,7 @@ and do not prove remote connectivity through SOCKS.
 engines are one-shot and only one may be active per process. Importing or constructing an engine does not open a TUN.
 
 On Linux/macOS, `tun_options["FileDescriptor"]` can supply a positive, borrowed descriptor. The binding duplicates it;
-the caller retains the original. Zero has upstream's meaning: create/open a device. Linux's external default also
+the caller retains the original. Zero has upstream's meaning: create/open a device. Linux's external configuration mode also
 supports opening a preconfigured TUN without MTU/link mutation; GSO or network-namespace creation uses upstream's
 constructor. Device privileges and actual descriptor transfer remain the application's responsibility.
 

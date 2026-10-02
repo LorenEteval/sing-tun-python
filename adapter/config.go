@@ -43,7 +43,7 @@ func parseConfig(raw []byte) (Config, error) {
 	if err := d.Decode(new(any)); err != io.EOF {
 		return c, fmt.Errorf("invalid trailing configuration")
 	}
-	c.TunOptions = tun.Options{MTU: 1500, Inet4Address: []netip.Prefix{netip.MustParsePrefix("198.18.0.1/15")}, DNSMode: tun.DNSModeDisabled, EXP_DisableDNSHijack: true, EXP_ExternalConfiguration: true}
+	c.TunOptions = tun.Options{MTU: 1500, Inet4Address: []netip.Prefix{netip.MustParsePrefix("198.18.0.1/15")}, AutoRoute: true, DNSMode: tun.DNSModeDisabled, EXP_DisableDNSHijack: true}
 	c.StackOptions = tun.StackOptions{UDPTimeout: time.Minute}
 	if err := decodeOptions(c.TunParameters, &c.TunOptions); err != nil {
 		return c, fmt.Errorf("tun_options: %w", err)
