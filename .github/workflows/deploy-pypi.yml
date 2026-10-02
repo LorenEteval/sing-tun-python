@@ -36,10 +36,6 @@ defaults:
   run:
     shell: bash
 
-concurrency:
-  group: distributions-${{ github.ref }}-${{ inputs.checkout_ref }}
-  cancel-in-progress: false
-
 jobs:
   validate-source:
     name: Validate source ownership and tooling
