@@ -1,0 +1,6 @@
+# Preserve the exact bytes of the vendored Git tree on every platform.
+adapter/go.mod text eol=lf
+adapter/go.sum text eol=lf
+*.go text eol=lf
+*.sh text eol=lf
+sing-tun-go/** -text
