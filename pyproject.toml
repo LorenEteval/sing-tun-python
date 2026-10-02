@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel", "cmake>=3.18", "pybind11>=3.0,<4"]
+build-backend = "setuptools.build_meta"
+
+[tool.cibuildwheel]
+build = ["cp3{9,10,11,12,13,14}-*", "cp314t-*"]
+skip = "*-musllinux_* cp38-win_arm64"
+test-command = ["python {project}/sample/sample.py --outside {project}", "python -m unittest discover -s {project}/tests -p test_native.py -v"]
+environment = { SING_TUN_REQUIRE_NATIVE = "1" }
+
+[tool.cibuildwheel.linux]
+before-all = "sh {project}/scripts/install-go-from-mod.sh {project}/adapter/go.mod"
+environment = { PATH = "/usr/local/go/bin:$PATH", SING_TUN_REQUIRE_NATIVE = "1" }
+manylinux-x86_64-image = "manylinux2014"
+manylinux-aarch64-image = "manylinux2014"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.black]
+target-version = ["py38"]

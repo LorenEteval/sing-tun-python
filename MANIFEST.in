@@ -1,0 +1,11 @@
+recursive-include sing_tun *.py
+recursive-include adapter *.go go.mod go.sum
+recursive-include sing-tun-go *
+recursive-include src *.cpp
+recursive-include scripts *.py *.sh
+recursive-include tests *.py *.md
+recursive-include sample *.py
+recursive-include licenses *.txt
+include CMakeLists.txt LICENSE README.md VERSION UPSTREAM_VERSION UPSTREAM_COMMIT UPSTREAM_TREE.json
+prune build
+prune .venv
