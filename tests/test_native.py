@@ -338,7 +338,7 @@ class NativeTests(unittest.TestCase):
             self.assertEqual(unpack(response)[3], payload6)
             self.assertEqual([item[2] for item in fixture.seen], [payload, payload6])
 
-    def test_udp_bound_idle_timeout_and_fragment_rejection(self):
+    def test_udp_bound_and_idle_timeout(self):
         with SocksFixture() as fixture:
             e = self.engine(fixture, max_sessions=2, udp_timeout=0.1)
             for port in (41001, 41002):
@@ -352,11 +352,15 @@ class NativeTests(unittest.TestCase):
                 time.sleep(0.01)
             self.assertEqual(json.loads(e.snapshot())["sessions"], 0)
             self.assertTrue(e.close(3000))
-        with SocksFixture(fragmented=True) as fixture:
-            e = self.engine(fixture, udp_timeout=0.1)
+
+    def test_udp_fragment_rejection_after_delayed_handshake(self):
+        # Fragment rejection must not depend on a short idle/handshake race.
+        with SocksFixture(fragmented=True, handshake_delay=0.4) as fixture:
+            e = self.engine(fixture)
             e.inject(udp("198.18.0.2", "198.19.0.9", 45678, 53, b"query"))
+            self.assertTrue(fixture.udp_response_sent.wait(3), "no SOCKS UDP reply")
             self.assertFalse(e.receive(300))
-            self.assertTrue(fixture.seen)
+            self.assertEqual(fixture.seen, [("udp", ("198.19.0.9", 53), b"query")])
 
 
 if __name__ == "__main__":

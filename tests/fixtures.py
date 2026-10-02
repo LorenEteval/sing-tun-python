@@ -35,10 +35,12 @@ def read_address(sock):
 class SocksFixture:
     """Map test wire destinations to owned loopback echo endpoints."""
 
-    def __init__(self, auth=None, stall=False, fragmented=False):
+    def __init__(self, auth=None, stall=False, fragmented=False, handshake_delay=0):
         self.auth, self.stall = auth, stall
         self.fragmented = fragmented
+        self.handshake_delay = handshake_delay
         self.done = threading.Event()
+        self.udp_response_sent = threading.Event()
         self.lock = threading.Lock()
         self.sockets, self.threads, self.controls = [], [], []
         self.seen, self.failures = [], []
@@ -104,6 +106,8 @@ class SocksFixture:
 
     def socks(self, conn):
         with conn:
+            if self.done.wait(self.handshake_delay):
+                return
             version, count = exact(conn, 2)
             assert version == 5
             methods = exact(conn, count)
@@ -184,6 +188,7 @@ class SocksFixture:
                 if self.fragmented:
                     header = b"\0\0\x01" + header[3:]
                 relay.sendto(header + response, peer)
+                self.udp_response_sent.set()
 
     def disconnect_controls(self):
         with self.lock:
