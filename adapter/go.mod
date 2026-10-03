@@ -9,9 +9,9 @@ require (
 	github.com/mdlayher/netlink v1.11.2
 	github.com/sagernet/fswatch v0.1.2
 	github.com/sagernet/gvisor v0.0.0-20260727.0-sing-box-mod.1
-	github.com/sagernet/netlink v0.0.0-20240612041022-b9a21c07ac6a
+	github.com/sagernet/netlink v0.0.0-20260814022025-64455d367bbf
 	github.com/sagernet/nftables v0.3.0-mod.4
-	github.com/sagernet/sing v0.8.12-0.20260717023913-84ab32b56cb8
+	github.com/sagernet/sing v0.9.5-0.20260917142815-f37989cadbf0
 	github.com/stretchr/testify v1.11.1
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
 	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc
@@ -31,7 +31,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-
-require github.com/sagernet/sing-tun v0.9.6
+require github.com/sagernet/sing-tun v0.9.7-0.20261002083955-3f8acd9da65b
 
 replace github.com/sagernet/sing-tun => ../sing-tun-go

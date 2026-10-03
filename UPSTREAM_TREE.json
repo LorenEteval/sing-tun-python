@@ -13,7 +13,7 @@
   ],
   ".github/workflows/test.yml": [
     "100644",
-    "be40dea888c64cf6913c8d602d90c981848fa641"
+    "3ab6ab14d603c8e1aac4d2396499a79aab5481ec"
   ],
   ".gitignore": [
     "100644",
@@ -29,7 +29,7 @@
   ],
   "Makefile": [
     "100644",
-    "ed36c792afb19a3e3cd09ca6416e54bfa1160b21"
+    "3b836ddee1a0a0cb7027cb1473aeba3ccb5851a0"
   ],
   "README.md": [
     "100644",
@@ -41,39 +41,39 @@
   ],
   "flow_dispatch.go": [
     "100644",
-    "88adeeb1ac9fe5ba41234b3cc314a4a9f620c634"
+    "08cc7d583590f865c123c79e30aa501f00c0ad6e"
   ],
   "flow_dns.go": [
     "100644",
-    "ee9a93630d0112a124bcda6ad70c5e77692e53c1"
+    "125e958692b96305d2b78bfd20ec397878dfee9f"
   ],
   "flow_mtu.go": [
     "100644",
-    "6ce275b3403ea637b021c8b0e1cf0c79904ed1d3"
+    "a998774d67be74bd825f3315bedfcb7c8d8d57c4"
   ],
   "flow_nat.go": [
     "100644",
-    "4d2bca3b10c6a81df41a0064afb411d3029e8311"
+    "39e4737a751babfa92ca825cda0af417ca7d0af9"
   ],
   "flow_parse.go": [
     "100644",
-    "45887994c0f762f7028cc8cbf23907c8d60b53c9"
+    "a897717641205514f02141216ad04e20279c8d1e"
   ],
   "flow_reject.go": [
     "100644",
-    "af82eb5cfad1b7433b2ad27e365cc19fa4294ac3"
+    "a6a623a84393d9bffec142688f4acb51c303435a"
   ],
   "flow_rewrite.go": [
     "100644",
-    "e4d796734a59dd7718b805fe6b31c77818006bb3"
+    "e99deaa64dae69223858523abc763d67e4a3ca21"
   ],
   "go.mod": [
     "100644",
-    "fbba8e2c0e186deac430785faca770257b1f93ba"
+    "deffaaf43b36c6f5ccaac384ff433176af9fef6d"
   ],
   "go.sum": [
     "100644",
-    "0c72db920ce62578787490bfd5dfcd6a2df32a8a"
+    "d644c5de25a3c932029d744dfbd6b9301f9b6bb7"
   ],
   "gtcpip/README.md": [
     "100644",
@@ -85,15 +85,15 @@
   ],
   "gtcpip/checksum/checksum_default.go": [
     "100644",
-    "99a2d753f7c62369c2b386700ccb2ca2831c68ed"
+    "932481f05addf6f23b950fef0ed80551fb5b9d5a"
   ],
   "gtcpip/checksum/checksum_ts.go": [
     "100644",
-    "f6766d3f2b80820e41602daf39ea7610df6e1907"
+    "14aa3a476a8281969c4eb7dd3f53dd7d6202170a"
   ],
   "gtcpip/checksum/checksum_unsafe.go": [
     "100644",
-    "66b7ab6796c458adc28125d0e4af577c59b04cc9"
+    "558dc6db7dbd5fd96710ed2329c98426d9bb9170"
   ],
   "gtcpip/errors.go": [
     "100644",
@@ -101,7 +101,7 @@
   ],
   "gtcpip/header/checksum.go": [
     "100644",
-    "303502cc6902073e157d084187f63ff925bbeabb"
+    "72274600e2a9316da2b18b05aa4c69bef10be9b8"
   ],
   "gtcpip/header/eth.go": [
     "100644",
@@ -121,7 +121,7 @@
   ],
   "gtcpip/header/ipv4.go": [
     "100644",
-    "3041eae93e9bfb073aedd1a41d2af7dfd3ba72e4"
+    "65b7ca17a9e09173ae0fdb11ecbfadd8482e8ddc"
   ],
   "gtcpip/header/ipv6.go": [
     "100644",
@@ -169,7 +169,7 @@
   ],
   "gtcpip/header/udp.go": [
     "100644",
-    "ce7708e1198144a7c30ca46963198a2061a2fda0"
+    "531d1d777fb006ced99176de515d9d7303aa9852"
   ],
   "gtcpip/seqnum/seqnum.go": [
     "100644",
@@ -179,13 +179,29 @@
     "100644",
     "a3dbca844328c8d253a1300e2697214765357f25"
   ],
+  "icmp_error.go": [
+    "100644",
+    "88a4136508cb971398885c22b81ad1413d16af4c"
+  ],
+  "internal/afd/afd_windows.go": [
+    "100644",
+    "3a012200f489a6c23bef0b4e66458a190087f34d"
+  ],
+  "internal/afd/zsyscall_windows.go": [
+    "100644",
+    "d6432a54285669c80ffcf9ec8779068121a6bd41"
+  ],
   "internal/checksum_test/sum_bench_test.go": [
     "100644",
-    "fb4aaa4c45bfdeeb615608baad96647b0f35b3b8"
+    "9b6ff2667ec49bf47496f7612b5a2f025558ff1a"
+  ],
+  "internal/checksum_test/sum_test.go": [
+    "100644",
+    "f6fb8d7e4a5d58c87371d588d8466924fe488879"
   ],
   "internal/fdbased_darwin/endpoint.go": [
     "100644",
-    "b3292a2e4d2c85290db54176ea2f1a33eb872228"
+    "a99b58712ca7c17237eab131b833da4510fce0f7"
   ],
   "internal/fdbased_darwin/endpoint_mutex.go": [
     "100644",
@@ -197,7 +213,7 @@
   ],
   "internal/fdbased_darwin/packet_dispatchers.go": [
     "100644",
-    "afe362f68b38bdaa01e5706f2e9f5b4b4dd5ead6"
+    "4bad9b2724e705acf5e00e29f59ff696dc04b4e1"
   ],
   "internal/fdbased_darwin/processor_mutex.go": [
     "100644",
@@ -221,7 +237,15 @@
   ],
   "internal/tschecksum/checksum_amd64.go": [
     "100644",
-    "85b925a04b7beb12b7ec538596dc21fc80fd9f48"
+    "954512f917e8c520da5322ead7b5f5a0540760d7"
+  ],
+  "internal/tschecksum/checksum_arm64.go": [
+    "100644",
+    "f1964b80146ddb3a832ae4934569304ba131d951"
+  ],
+  "internal/tschecksum/checksum_arm64.s": [
+    "100644",
+    "35c64cf2c5b93ebd490600745ffc61d40c588254"
   ],
   "internal/tschecksum/checksum_generated_amd64.go": [
     "100644",
@@ -233,7 +257,7 @@
   ],
   "internal/tschecksum/checksum_generic.go": [
     "100644",
-    "2d6c13481057f82acabe2fac60a76fc6e790e577"
+    "81e7cdbb2cdec302bb9d757274cdec99ba567e12"
   ],
   "internal/tschecksum/generate_amd64.go": [
     "100644",
@@ -305,7 +329,7 @@
   ],
   "internal/winsys/constants.go": [
     "100644",
-    "1173ea9a712f0afbbbda92595a847a7d51a6f743"
+    "03e6e65e575ac5924cbb5dab1e9991cc5ad0e5b0"
   ],
   "internal/winsys/helper.go": [
     "100644",
@@ -321,7 +345,7 @@
   ],
   "internal/winsys/types_windows.go": [
     "100644",
-    "af6f3c04a9dbf53ff16f1b6a11fbb1b8677796a2"
+    "01ca6f3eab2563bcfb68d77485b47e69fc5e202c"
   ],
   "internal/winsys/zsyscall_windows.go": [
     "100644",
@@ -365,7 +389,7 @@
   ],
   "internal/wintun/memmod/memmod_windows.go": [
     "100644",
-    "0b345ba6a1eae04b5f127af0f167189ccc108ac3"
+    "37e25560bbfe1669f17923d351f95357cdbc00a6"
   ],
   "internal/wintun/memmod/memmod_windows_32.go": [
     "100644",
@@ -393,7 +417,7 @@
   ],
   "internal/wintun/memmod/syscall_windows.go": [
     "100644",
-    "b79be69e9e0e6a87dbdf626cfbd6dc7609e486bf"
+    "e1d25d2d06bf451183ec945f2381ab0b5ab27c17"
   ],
   "internal/wintun/memmod/syscall_windows_32.go": [
     "100644",
@@ -405,7 +429,7 @@
   ],
   "internal/wintun/session_windows.go": [
     "100644",
-    "306f3b129ff35bba0e2fdf59b0c9f289ee2544f6"
+    "99656491bfbc0a8beafed4895b07fc5b69cde017"
   ],
   "internal/wintun/wintun_windows.go": [
     "100644",
@@ -429,7 +453,7 @@
   ],
   "monitor_linux.go": [
     "100644",
-    "5a13a7f7a69dca0cfc24fb5b7b3389fab566d231"
+    "b57a1f2902595f6a47a105504c411e5ad9364469"
   ],
   "monitor_linux_default.go": [
     "100644",
@@ -461,7 +485,7 @@
   ],
   "nfqueue_linux.go": [
     "100644",
-    "73151c6b4340fdfafb3713ec1d65df03dbf39194"
+    "7d78912840013d2a1ab475fc752e3d8a2da8c95c"
   ],
   "packages.go": [
     "100644",
@@ -501,7 +525,7 @@
   ],
   "ping/ping.go": [
     "100644",
-    "5ab1417ae8baf27ee78c92356ee5a4a108e9e75a"
+    "0c3997d6843dc17831aec200e725bc9c6fcd1121"
   ],
   "ping/ping_test.go": [
     "100644",
@@ -509,7 +533,7 @@
   ],
   "ping/port.go": [
     "100644",
-    "e0cc2a1da8c0c8514ad8360ae478036428b8393b"
+    "b0b8afc71212384b9152f2fd1ad8136199ec34b4"
   ],
   "ping/socket_linux_unprivileged.go": [
     "100644",
@@ -525,19 +549,23 @@
   ],
   "redirect.go": [
     "100644",
-    "dcf3e720b1169c3d0e320f2db3467d46f4cc1310"
+    "bf3023c85ca210a1d61dd2bbff83a85d5c81e000"
+  ],
+  "redirect_ingress_discard_android.go": [
+    "100644",
+    "291a677174455cacdeda544350aef61628f0d4ec"
   ],
   "redirect_iptables.go": [
     "100644",
-    "1b7948aa645c402edb5ee86192f9738ae7d37262"
+    "05b7a43d03b9f6d6182ad37bdf400633c95b07f7"
   ],
   "redirect_linux.go": [
     "100644",
-    "dd8c61f4a8f77d681d71e1edd4051b11702f9418"
+    "408051a6b79daa0886358b5c37255cebb6d0d2f1"
   ],
   "redirect_nftables.go": [
     "100644",
-    "70e21466d866313b7aba4107fc939a2bfc38a126"
+    "b491a903b06e87af680b73f9298787ff9e1e746e"
   ],
   "redirect_nftables_docker.go": [
     "100644",
@@ -549,19 +577,31 @@
   ],
   "redirect_nftables_rules.go": [
     "100644",
-    "40c3e0fe7108093404c777119c5cadb53616bd2f"
+    "69fce8afa8569b603b1db37b93b911de318e4c2a"
   ],
   "redirect_nftables_rules_openwrt.go": [
     "100644",
     "cbbf298733471844cf58853491eee43acc4fd32f"
   ],
+  "redirect_route_bypass_android.go": [
+    "100644",
+    "5dd79b03d3b8be023110ae73672486f40c2e8ba2"
+  ],
   "redirect_route_linux.go": [
     "100644",
-    "f73df11a23e4618df5ed072d204760f3feddf1b6"
+    "a55f0a719b6075fe7cb16cfb13386cba9015e63f"
+  ],
+  "redirect_route_vpnservice_android.go": [
+    "100644",
+    "af2803a6d39327a831eb9b0b7a29319855fc7b2a"
+  ],
+  "redirect_route_vpnservice_stub.go": [
+    "100644",
+    "45fdc608aaaeaaf014b382d7d6e29029ec978223"
   ],
   "redirect_server.go": [
     "100644",
-    "1f138ec44220ac9cb0e5d3971af5266ebc7ce515"
+    "e11dffbdec24373a7fce1e3fda4f8ddb7243d5c3"
   ],
   "redirect_stub.go": [
     "100644",
@@ -569,15 +609,243 @@
   ],
   "stack.go": [
     "100644",
-    "613e45dcb0669f4f6067f0a945697b700605d135"
+    "3b1e9869e5ba2a475d6259f5da1f7cbeb6023196"
+  ],
+  "stack_go.go": [
+    "100644",
+    "6c6bf19ff7475b9d48c5c9d179d6da65f46113b2"
+  ],
+  "stack_go_conn.go": [
+    "100644",
+    "1c2251e103a12f921e22e0db5052825a82e6242e"
+  ],
+  "stack_go_conn_options.go": [
+    "100644",
+    "5a45fbb12eeaa252de27923309a79bbd0777268e"
+  ],
+  "stack_go_dial.go": [
+    "100644",
+    "a6777163d9904045fbd79a3a43ddac07913ff5b3"
+  ],
+  "stack_go_engine.go": [
+    "100644",
+    "20472ffd099bf1fd81adb1b1c6d01da282edb998"
+  ],
+  "stack_go_integration_cc_test.go": [
+    "100644",
+    "d5ecbe5881e1a03071dda7921ca4a9a05518db0d"
+  ],
+  "stack_go_integration_cpu_unix_test.go": [
+    "100644",
+    "70b3cbf60078b85e6bc8952c1c2d4fa3154cf572"
+  ],
+  "stack_go_integration_cpu_windows_test.go": [
+    "100644",
+    "ab3af2e25f4b1698964d442969f9c353fc3e3dcc"
+  ],
+  "stack_go_integration_darwin_test.go": [
+    "100644",
+    "0db8901625237e0c7091be291d419d265db98375"
+  ],
+  "stack_go_integration_flow_linux_test.go": [
+    "100644",
+    "44b36a3693320264c23da6d6d3cba00f7e3c7c42"
+  ],
+  "stack_go_integration_lifecycle_linux_test.go": [
+    "100644",
+    "e815f63fbc2299f76d529f4c11b517c58379549e"
+  ],
+  "stack_go_integration_lifecycle_test.go": [
+    "100644",
+    "28f3fd76edee1b40d2a0202665daad43d0b015b0"
+  ],
+  "stack_go_integration_linux_test.go": [
+    "100644",
+    "6f5022b8af19eba536c46b8fbf2981a467d1139d"
+  ],
+  "stack_go_integration_listen_test.go": [
+    "100644",
+    "9e0ffa13c655ff46d7be6e38109ee8826ff3e982"
+  ],
+  "stack_go_integration_memory_darwin_test.go": [
+    "100644",
+    "0d61312314f5b1eab6798bc140b767d8b15f6a9e"
+  ],
+  "stack_go_integration_memory_linux_test.go": [
+    "100644",
+    "9c3eb2e08692ed4bcc15e2e1d151c50cd3e97aa9"
+  ],
+  "stack_go_integration_memory_test.go": [
+    "100644",
+    "305c2eb79f2a6162fd116c8b2d9eab4bcd541153"
+  ],
+  "stack_go_integration_options_test.go": [
+    "100644",
+    "2126f8a535d171ea0349c849aaf33baa3a85454d"
+  ],
+  "stack_go_integration_packet_flow_test.go": [
+    "100644",
+    "8a9bd4925a6e92bdd92f3237d8955c1f0bbb821a"
+  ],
+  "stack_go_integration_packet_offload_linux_test.go": [
+    "100644",
+    "37c5aaf24f21128493f19b1406c9ca90564f38d2"
+  ],
+  "stack_go_integration_packet_test.go": [
+    "100644",
+    "a5146874f25206dae0ee726e115aed86a58d289c"
+  ],
+  "stack_go_integration_splice_test.go": [
+    "100644",
+    "1aef4aac5187d79d4e1a2cde86d53ae5597e2b9d"
+  ],
+  "stack_go_integration_tcp_test.go": [
+    "100644",
+    "9159152e0c2d5acb612cd6f40b5fa98483b19f79"
+  ],
+  "stack_go_integration_test.go": [
+    "100644",
+    "cf31f6d2400a8f7276521ac406d4880daf6e69c8"
+  ],
+  "stack_go_integration_windows_test.go": [
+    "100644",
+    "000ad004ab5d730c10abf618916f1efeda444a3c"
+  ],
+  "stack_go_io.go": [
+    "100644",
+    "9e28f88f5e8c7430c9055c4d6734dda3cf1802b3"
+  ],
+  "stack_go_io_darwin.go": [
+    "100644",
+    "1d13e702b0f76bf1ae6b393ecb2360b8dc2a1e02"
+  ],
+  "stack_go_io_linux.go": [
+    "100644",
+    "6cd412cfe42f451b80c7338bf41be09cbb53c456"
+  ],
+  "stack_go_io_memory.go": [
+    "100644",
+    "c319aee7119b6bb3e6fa483b1f59570afd7318f3"
+  ],
+  "stack_go_io_other.go": [
+    "100644",
+    "5dc001171940f419eec9535a164c4357c4ae7958"
+  ],
+  "stack_go_io_windows.go": [
+    "100644",
+    "7627542c49c11c03a9a172f99927be10090a6747"
+  ],
+  "stack_go_listen.go": [
+    "100644",
+    "b9ef6c58b007bc1971caa2a28dfbb4fb5a09cf3f"
+  ],
+  "stack_go_memory.go": [
+    "100644",
+    "5f361d935a9e379267d6dfc1f0051cf5d74f55cb"
+  ],
+  "stack_go_memory_arena.go": [
+    "100644",
+    "50d0d10139916460492b1e28991660e6608e9f7e"
+  ],
+  "stack_go_memory_darwin.go": [
+    "100644",
+    "95cf38e1743929977049768b1a6eee64ee647f5d"
+  ],
+  "stack_go_memory_linux.go": [
+    "100644",
+    "8118386b835706ba8ab51f134ed4fd99861dd105"
+  ],
+  "stack_go_memory_other.go": [
+    "100644",
+    "793446dcebcc7be6fd07eacb521728044919de54"
+  ],
+  "stack_go_profile_default.go": [
+    "100644",
+    "3e14643ab6b1d702d87c32f9aa105249e7085848"
+  ],
+  "stack_go_profile_ios.go": [
+    "100644",
+    "f083353c32e8b1f44e1f75488892fdc8f25444e1"
+  ],
+  "stack_go_ring.go": [
+    "100644",
+    "5d4ac539f99719fbeddd9797c3b86a17aabdae64"
+  ],
+  "stack_go_socket_darwin.go": [
+    "100644",
+    "2cd6ee143040b7740a81eafe08bced4d8c9da7cc"
+  ],
+  "stack_go_socket_linux.go": [
+    "100644",
+    "0deaca118d7f1a14d0475e5bae7cfa18d3816c0c"
+  ],
+  "stack_go_socket_nonunix.go": [
+    "100644",
+    "cb0572138c10935d95cb888e62b3574c5b32c3f7"
+  ],
+  "stack_go_socket_unix.go": [
+    "100644",
+    "5ee3ff379f76240b0de91f667c4bcb81b31a2c24"
+  ],
+  "stack_go_socket_windows.go": [
+    "100644",
+    "835217952f768d4a4b01e96bf7695c1c1358f9bc"
+  ],
+  "stack_go_splice.go": [
+    "100644",
+    "31d1de1cc41b3e94a49b7e7e7a1e6f82bbe4f081"
+  ],
+  "stack_go_tcp_ack.go": [
+    "100644",
+    "cde9c6b405c91d2fab9d153612744a3534e295c0"
+  ],
+  "stack_go_tcp_bbr.go": [
+    "100644",
+    "91a782a719c94b516aeec7893ad4d53d7d8c8cb5"
+  ],
+  "stack_go_tcp_cong.go": [
+    "100644",
+    "cf5fbde3dab444fe29436186979a4d74444b4107"
+  ],
+  "stack_go_tcp_cubic.go": [
+    "100644",
+    "bc22403d18f77a736c618856846c8a2c0418a62a"
+  ],
+  "stack_go_tcp_input.go": [
+    "100644",
+    "46c5c16156a0d1e63d5679e28b725a3843b0a675"
+  ],
+  "stack_go_tcp_output.go": [
+    "100644",
+    "e7af6dabc54e8726e6be72e9e57fa67502e4db4e"
+  ],
+  "stack_go_tcp_rate.go": [
+    "100644",
+    "848528e5adfbe00d007cf27400ea336b34ca6a44"
+  ],
+  "stack_go_udp.go": [
+    "100644",
+    "86760cd13bf4fe277e7327d4ca8e58e99c527949"
+  ],
+  "stack_go_udp_socket.go": [
+    "100644",
+    "abdb053bc3d132bb832f9fd103a3f191ba9ef136"
+  ],
+  "stack_go_udp_test.go": [
+    "100644",
+    "7f03fbc33e0592065c759debcd64d85969737156"
+  ],
+  "stack_go_wheel.go": [
+    "100644",
+    "6bdcb130aca1d85e09fa7ccd1a11bf335d76fcf6"
   ],
   "stack_gvisor.go": [
     "100644",
-    "c226d05d357fe7f87624dfc972c704e16e66f612"
+    "5d4f3ac36e44d5194cd4e40d72b89c5a7f86020c"
   ],
   "stack_gvisor_filter.go": [
     "100644",
-    "6f889ed0490c072c6cf76dec358a28bc6906d2e4"
+    "3cf9e01484de38f4b472271f7d7c441b39f9aa11"
   ],
   "stack_gvisor_icmp.go": [
     "100644",
@@ -601,7 +869,7 @@
   ],
   "stack_gvisor_tcp_conn.go": [
     "100644",
-    "ad48d42f0e9f17a7db0b5c2b7ad9e0537f392c92"
+    "ff3db0b40082fac150c5a1bed8e04652225751f9"
   ],
   "stack_gvisor_tcpbuf_default.go": [
     "100644",
@@ -617,11 +885,11 @@
   ],
   "stack_mixed.go": [
     "100644",
-    "fccd45d8f2d4a9362e13bb528aab8c32ea0b77f4"
+    "ba1b9b7b7d2021f967635a55a4cc75401272468c"
   ],
   "stack_system.go": [
     "100644",
-    "46fadb0cd7f7f57cc2da42e05cbe9b7424b19c14"
+    "5b34d0afc4a815dd634703bcfb8a1d54e67c39e1"
   ],
   "stack_system_nat.go": [
     "100644",
@@ -641,11 +909,11 @@
   ],
   "tun.go": [
     "100644",
-    "e7701222182f80ae0d3e66cb976ad7f72de93d81"
+    "07cbf91c8c9c6a047c684632f0dedd1531c4a3f4"
   ],
   "tun_darwin.go": [
     "100644",
-    "4b00ac5961da7da02898428c2face1070c148ac1"
+    "5ede7565c1031fbba1e7ab9f988750a97955554e"
   ],
   "tun_darwin_gvisor.go": [
     "100644",
@@ -653,7 +921,7 @@
   ],
   "tun_linux.go": [
     "100644",
-    "15515ea9319625336d20fbc87a6827d0036561dc"
+    "aaaedc8e6af6b2bc78a39c678d23eb281595b5e9"
   ],
   "tun_linux_flags.go": [
     "100644",
@@ -661,7 +929,15 @@
   ],
   "tun_linux_gvisor.go": [
     "100644",
-    "48e142a9408ea629563fc876fe787e4c3e3a7289"
+    "43b58bb1a1fa915789f3e23015e296a9cd047bb5"
+  ],
+  "tun_memory.go": [
+    "100644",
+    "aff3a1fab6610237fa59d9ea51c542e1ec92110e"
+  ],
+  "tun_memory_queue.go": [
+    "100644",
+    "023982ea64c200784c3c520f903c62f898b2b645"
   ],
   "tun_nondarwin.go": [
     "100644",
@@ -673,7 +949,7 @@
   ],
   "tun_offload.go": [
     "100644",
-    "f68fbfeb822210c3335bfd09c816bd580295608f"
+    "d00ecc988a0c46e7aff3257b095f272174659bce"
   ],
   "tun_offload_errors.go": [
     "100644",
@@ -697,15 +973,15 @@
   ],
   "tun_windows.go": [
     "100644",
-    "6dfce2f232b57822af86e1b8b8143891688988ac"
+    "c612bd16b3e9a3ca02d584a92eabad9e8a5f3742"
   ],
   "tun_windows_gvisor.go": [
     "100644",
-    "9e68b444aee498952a3466f698c9491b812a1bb9"
+    "cf9683d2a6de1cc5100e86bb9954b1483333d16e"
   ],
   "udp_egress.go": [
     "100644",
-    "0ace53e82114794cbc3739af3f0886ec84064d95"
+    "df4e46f6c8d952c6842ad5dccf75f2e0cc5b671d"
   ],
   "udp_egress_conn.go": [
     "100644",
@@ -713,10 +989,10 @@
   ],
   "udp_nat.go": [
     "100644",
-    "6d5dd945ce6aad408d8767dcc4f03bff561c3edc"
+    "3f19b38d8689ccbfd3a492d1c786ed826ccabda9"
   ],
   "udp_nat_cleanup.go": [
     "100644",
-    "c63b8af1e0d49ddfce618e7e238d65ea86cf5b5d"
+    "a2d0090896bb9a93dbc0fa8084ec3de0a5b5c7ac"
   ]
 }

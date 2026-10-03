@@ -116,7 +116,7 @@ func (m *Mixed) tunLoop() {
 			return
 		}
 		readRetry.Reset()
-		if n < header.IPv4MinimumSize {
+		if n-PacketOffset < header.IPv4MinimumSize {
 			continue
 		}
 		rawPacket := packetBuffer[:n]
@@ -127,7 +127,7 @@ func (m *Mixed) tunLoop() {
 				m.logger.Trace(E.Cause(err, "write packet"))
 			}
 		}
-		m.dispatcher.Flush()
+		m.dispatchStage.Flush()
 	}
 }
 
@@ -147,7 +147,7 @@ func (m *Mixed) wintunLoop(winTun WinTun) {
 				m.logger.Trace(E.Cause(err, "write packet"))
 			}
 		}
-		m.dispatcher.Flush()
+		m.dispatchStage.Flush()
 		release()
 	}
 }
@@ -195,7 +195,7 @@ func (m *Mixed) batchLoopLinux(linuxTUN LinuxTUN, batchSize int) {
 			}
 			writeBuffers = writeBuffers[:0]
 		}
-		m.dispatcher.Flush()
+		m.dispatchStage.Flush()
 	}
 }
 
@@ -204,7 +204,7 @@ func (m *Mixed) batchLoopDarwin(darwinTUN DarwinTUN) {
 	var releaseBuffers []*buf.Buffer
 	var readRetry ReadRetry
 	for {
-		buffers, err := darwinTUN.BatchRead()
+		buffers, err := darwinTUN.BatchRead(0, 0)
 		if err != nil {
 			if !IsRecoverableReadError(err) {
 				if !E.IsClosed(err) && !errors.Is(err, syscall.EBADF) {
@@ -241,7 +241,7 @@ func (m *Mixed) batchLoopDarwin(darwinTUN DarwinTUN) {
 			}
 			buf.ReleaseMulti(writeBuffers)
 		}
-		m.dispatcher.Flush()
+		m.dispatchStage.Flush()
 		buf.ReleaseMulti(releaseBuffers)
 	}
 }
@@ -267,6 +267,10 @@ func (m *Mixed) processPacket(packet []byte) bool {
 }
 
 func (m *Mixed) processIPv4(ipHdr header.IPv4) (writeBack bool, err error) {
+	if !ipHdr.IsValid(len(ipHdr)) {
+		return false, E.New("ipv4: invalid packet")
+	}
+	ipHdr = ipHdr[:ipHdr.TotalLength()]
 	writeBack = true
 	destination := ipHdr.DestinationAddr()
 	if destination == m.broadcastAddr || !destination.IsGlobalUnicast() {
@@ -294,6 +298,10 @@ func (m *Mixed) processIPv4(ipHdr header.IPv4) (writeBack bool, err error) {
 }
 
 func (m *Mixed) processIPv6(ipHdr header.IPv6) (writeBack bool, err error) {
+	if !ipHdr.IsValid(len(ipHdr)) {
+		return false, E.New("ipv6: invalid packet")
+	}
+	ipHdr = ipHdr[:header.IPv6MinimumSize+int(ipHdr.PayloadLength())]
 	writeBack = true
 	destination := ipHdr.DestinationAddr()
 	if !destination.IsGlobalUnicast() {
