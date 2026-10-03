@@ -232,6 +232,7 @@ class NativeTests(unittest.TestCase):
         with SocksFixture(auth=(b"user", b"pass")) as fixture:
             c = Config(
                 proxy="socks5://user:pass@%s:%s" % fixture.endpoint,
+                stack=self.default_stack,
                 tun_options={
                     "Inet4Address": ["198.18.0.1/15"],
                     "Inet6Address": ["fd00::1/64"],
@@ -251,7 +252,10 @@ class NativeTests(unittest.TestCase):
 
     def test_auth_failure_and_control_disconnect_release_sessions(self):
         with SocksFixture(auth=(b"user", b"pass")) as fixture:
-            config = Config(proxy="socks5://user:wrong@%s:%s" % fixture.endpoint)
+            config = Config(
+                proxy="socks5://user:wrong@%s:%s" % fixture.endpoint,
+                stack=self.default_stack,
+            )
             e = _native.Engine(config._json(), True)
             e.start()
             self.addCleanup(lambda: self.assertTrue(e.close(5000)))
