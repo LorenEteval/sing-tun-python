@@ -6,10 +6,16 @@ Python bindings for [sing-tun](https://github.com/SagerNet/sing-tun), with a SOC
 
 ## Installation
 
-Install from PyPI:
+Install the latest stable release from PyPI:
 
 ```console
-pip install sing-tun==0.9.7.dev0
+pip install sing-tun
+```
+
+To install or upgrade to a development prerelease when available:
+
+```console
+pip install --upgrade --pre sing-tun
 ```
 
 Binary wheels include the compiled Go backend and native Python binding. Installing a compatible wheel does not require
@@ -52,7 +58,6 @@ from sing_tun import Config, Engine
 
 config = Config(
     proxy="socks5://127.0.0.1:1080",
-    stack="go",
     tun_options={
         "MTU": 1500,
         "Inet4Address": ["198.18.0.1/15"],
@@ -74,27 +79,22 @@ values use upstream's numeric enums (0, 1, 2), and duration fields accept Go dur
 Unknown fields and incorrect types are rejected. Runtime objects such as Context, Tun, Handler, Logger,
 InterfaceFinder and InterfaceMonitor are supplied by the binding and cannot be passed as JSON.
 
-Defaults are `stack="go"`, `Name=""` (automatic selection), `MTU=1500`, `Inet4Address=["198.18.0.1/15"]`,
-`EXP_ExternalConfiguration=False`, `AutoRoute=True`, `DNSMode="disabled"`, `EXP_DisableDNSHijack=True`,
-and stack `UDPTimeout="1m"`; other upstream fields keep their zero/default values. On every supported platform an omitted or empty
-`Name` selects an unused `utun10`-`utun1024` name at startup, beginning at a random index. An explicit name is preserved.
-`engine.device_name` reports the actual interface name after opening; selection does not reserve a name against other
-processes, and a creation collision is reported by upstream. Callers may override device/network
-options, including external configuration, routing and DNS settings. Device creation and MTU/link operations remain
-platform-specific upstream behavior. Windows system/mixed startup uses upstream's firewall configuration.
+Omitting `stack` uses the installed package's default. Pass a stack name reported by `sing_tun.capabilities()["stacks"]`
+to select it explicitly, or pass `stack=""` to delegate selection to upstream.
+Available stacks, upstream option fields, defaults and packet behavior depend on the bundled sing-tun version and platform.
+Consult the bundled option structs above and the binding's [configuration defaults](adapter/config.go) for that checkout;
+these links describe the source revision being viewed.
 
-With these defaults, upstream configures the interface addresses and TUN routes and removes its routes on close.
+Callers may override device/network options, including interface names, routing and DNS settings.
+An omitted or empty device `Name` lets the binding select an unused name; an explicit name is preserved.
+`engine.device_name` reports the actual interface name after opening. Device creation and configuration follow
+platform-specific upstream behavior.
+
+Automatic routing lets upstream configure the interface addresses and TUN routes and remove its routes on close.
 The application must arrange for the proxy core's outbound traffic to bypass the TUN and manage its DNS policy.
 To use an externally configured device and routes, pass
 `tun_options={"EXP_ExternalConfiguration": True, "AutoRoute": False}`.
 Creating/configuring the device and routes requires the appropriate platform privileges.
-
-Stack choices are `"go"` (upstream's new userspace TCP/UDP stack), `"gvisor"` (gVisor TCP/UDP),
-`"system"` (OS TCP with upstream userspace UDP handling), and `"mixed"` (OS TCP plus gVisor UDP).
-`stack=""` delegates selection to upstream, which selects `"go"` in this snapshot.
-The Go stack's `TCPCongestionControl` option is available through `stack_options`.
-This snapshot's Go parser rejects IPv6 hop-by-hop, routing, and destination option headers; gVisor remains available
-for callers that need those packets. Packet processing follows the selected upstream stack.
 
 The SOCKS handler requires an IP-literal `proxy` URL and supports optional username/password authentication. Its separate
 bridge controls are `network_interface=""` (no explicit outbound SOCKS interface binding; the OS chooses the route), `log_level="error"`, `max_sessions=1024`,
@@ -114,13 +114,24 @@ the caller retains the original. Zero has upstream's meaning: create/open a devi
 supports opening a preconfigured TUN without MTU/link mutation; GSO or network-namespace creation uses upstream's
 constructor. Device privileges and actual descriptor transfer remain the application's responsibility.
 
-Runtime provenance is available as `sing_tun.__version__`, `sing_tun.__upstream_version__`, and
-`sing_tun.__upstream_commit__`. `sing_tun.capabilities()` describes the available stacks and binding behavior.
+Inspect the installed package's version, upstream provenance, default stack and available stacks without opening a TUN:
+
+```python
+import sing_tun
+
+print(sing_tun.__version__)
+print(sing_tun.__upstream_version__, sing_tun.__upstream_commit__)
+print(sing_tun.Config(proxy="socks5://127.0.0.1:1080").stack)
+print(sing_tun.capabilities()["stacks"])
+```
+
+`sing_tun.capabilities()` also describes binding behavior. Python API help is available through
+`help(sing_tun.Config)` and `help(sing_tun.Engine)`.
 
 ## Vendored Upstream Source
 
-The source distribution vendors the exact sing-tun development commit recorded in `UPSTREAM_COMMIT`;
-`UPSTREAM_VERSION` is `dev`. The package version identifies the development snapshot.
+The source distribution vendors the exact sing-tun commit recorded in `UPSTREAM_COMMIT`.
+`UPSTREAM_VERSION` identifies its stable upstream tag or the development branch `dev`.
 Files under `sing-tun-go/` preserve upstream source without modifications.
 The separate `adapter/` module supplies the C ABI, Python lifecycle, SOCKS handler and descriptor ownership glue;
 upstream constructors implement device and packet-stack behavior.
@@ -135,13 +146,12 @@ python scripts/verify_source.py
 python scripts/sync-sing-tun.py verify
 ```
 
-Stable releases use the same Git release tag as upstream. Development snapshots use Python versions such as
-`0.9.7.dev0` and Git tags such as `v0.9.7.dev0`, with `dev` and an exact commit as upstream provenance.
-Development releases are manual from `codex/development`, require the full build/test matrix, and are marked as GitHub
-prereleases. The hourly stable-tag updater runs only on `main`; publishing a development snapshot does not change it.
-To publish a prepared snapshot, run the distribution workflow manually on `codex/development` with the exact
-commit as `checkout_ref`, `v0.9.7.dev0` as `release_tag`, and `dev` as `upstream_tag`.
-Alternatively, push the matching development tag after committing the snapshot to that branch.
+Stable releases use the same Git release tag as upstream. `VERSION` contains the corresponding Python package version
+without the `v` prefix; for stable releases, `UPSTREAM_VERSION` is `v` followed by `VERSION`.
+Development snapshots use a Python version ending in `.devN` and a matching Git tag with the `v` prefix;
+`UPSTREAM_VERSION` is `dev` and `UPSTREAM_COMMIT` pins an exact commit rather than following a moving branch.
+Development releases are prepared manually on `codex/development` and published as GitHub prereleases.
+The hourly stable-tag updater runs only on `main`.
 Developer synchronization tooling requires Python 3.12+. Publishing needs a PyPI trusted publisher for
 `LorenEteval/sing-tun-python`, workflow `deploy-pypi.yml`, environment `deploy-pypi`, and the protected GitHub environment.
 
