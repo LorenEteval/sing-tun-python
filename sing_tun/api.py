@@ -16,7 +16,7 @@ class Config:
     """SOCKS bridge configuration with native sing-tun option dictionaries."""
 
     proxy: str = field(repr=False)
-    stack: str = "gvisor"
+    stack: str = "go"
     tun_options: Dict[str, Any] = field(default_factory=dict)
     stack_options: Dict[str, Any] = field(default_factory=dict)
     log_level: str = "error"
@@ -132,7 +132,7 @@ def capabilities():
         or sys.platform == "darwin"
     )
     return {
-        "stacks": ("gvisor", "system", "mixed") if supported else (),
+        "stacks": ("go", "gvisor", "system", "mixed") if supported else (),
         "host_managed_default": False,
         "upstream_options": ("tun_options", "stack_options"),
         "dns": "SOCKS transit by default; upstream device DNS options available",

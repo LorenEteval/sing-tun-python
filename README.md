@@ -9,7 +9,7 @@ Python bindings for [sing-tun](https://github.com/SagerNet/sing-tun), with a SOC
 Install from PyPI:
 
 ```console
-pip install sing-tun
+pip install sing-tun==0.9.7.dev0
 ```
 
 Binary wheels include the compiled Go backend and native Python binding. Installing a compatible wheel does not require
@@ -52,7 +52,7 @@ from sing_tun import Config, Engine
 
 config = Config(
     proxy="socks5://127.0.0.1:1080",
-    stack="gvisor",
+    stack="go",
     tun_options={
         "MTU": 1500,
         "Inet4Address": ["198.18.0.1/15"],
@@ -74,7 +74,7 @@ values use upstream's numeric enums (0, 1, 2), and duration fields accept Go dur
 Unknown fields and incorrect types are rejected. Runtime objects such as Context, Tun, Handler, Logger,
 InterfaceFinder and InterfaceMonitor are supplied by the binding and cannot be passed as JSON.
 
-Defaults are `stack="gvisor"`, `Name=""` (automatic selection), `MTU=1500`, `Inet4Address=["198.18.0.1/15"]`,
+Defaults are `stack="go"`, `Name=""` (automatic selection), `MTU=1500`, `Inet4Address=["198.18.0.1/15"]`,
 `EXP_ExternalConfiguration=False`, `AutoRoute=True`, `DNSMode="disabled"`, `EXP_DisableDNSHijack=True`,
 and stack `UDPTimeout="1m"`; other upstream fields keep their zero/default values. On every supported platform an omitted or empty
 `Name` selects an unused `utun10`-`utun1024` name at startup, beginning at a random index. An explicit name is preserved.
@@ -89,9 +89,12 @@ To use an externally configured device and routes, pass
 `tun_options={"EXP_ExternalConfiguration": True, "AutoRoute": False}`.
 Creating/configuring the device and routes requires the appropriate platform privileges.
 
-Stack choices are `"gvisor"` (userspace TCP/UDP), `"system"` (OS TCP with upstream userspace UDP handling),
-and `"mixed"` (OS TCP plus gVisor UDP). `stack=""` delegates selection to upstream: with this build it normally chooses
-mixed, uses system with GSO, or chooses gVisor with `IncludeAllNetworks=True`.
+Stack choices are `"go"` (upstream's new userspace TCP/UDP stack), `"gvisor"` (gVisor TCP/UDP),
+`"system"` (OS TCP with upstream userspace UDP handling), and `"mixed"` (OS TCP plus gVisor UDP).
+`stack=""` delegates selection to upstream, which selects `"go"` in this snapshot.
+The Go stack's `TCPCongestionControl` option is available through `stack_options`.
+This snapshot's Go parser rejects IPv6 hop-by-hop, routing, and destination option headers; gVisor remains available
+for callers that need those packets. Packet processing follows the selected upstream stack.
 
 The SOCKS handler requires an IP-literal `proxy` URL and supports optional username/password authentication. Its separate
 bridge controls are `network_interface=""` (no explicit outbound SOCKS interface binding; the OS chooses the route), `log_level="error"`, `max_sessions=1024`,
@@ -116,7 +119,8 @@ Runtime provenance is available as `sing_tun.__version__`, `sing_tun.__upstream_
 
 ## Vendored Upstream Source
 
-The source distribution vendors the exact stable sing-tun tag recorded in `UPSTREAM_VERSION` and `UPSTREAM_COMMIT`.
+The source distribution vendors the exact sing-tun development commit recorded in `UPSTREAM_COMMIT`;
+`UPSTREAM_VERSION` is `dev`. The package version identifies the development snapshot.
 Files under `sing-tun-go/` preserve upstream source without modifications.
 The separate `adapter/` module supplies the C ABI, Python lifecycle, SOCKS handler and descriptor ownership glue;
 upstream constructors implement device and packet-stack behavior.
@@ -131,8 +135,13 @@ python scripts/verify_source.py
 python scripts/sync-sing-tun.py verify
 ```
 
-The binding uses the same Git release tag as upstream. `VERSION` contains the corresponding Python package version
-without the `v` prefix; synchronization and release checks require it to match `UPSTREAM_VERSION`.
+Stable releases use the same Git release tag as upstream. Development snapshots use Python versions such as
+`0.9.7.dev0` and Git tags such as `v0.9.7.dev0`, with `dev` and an exact commit as upstream provenance.
+Development releases are manual from `codex/development`, require the full build/test matrix, and are marked as GitHub
+prereleases. The hourly stable-tag updater runs only on `main`; publishing a development snapshot does not change it.
+To publish a prepared snapshot, run the distribution workflow manually on `codex/development` with the exact
+commit as `checkout_ref`, `v0.9.7.dev0` as `release_tag`, and `dev` as `upstream_tag`.
+Alternatively, push the matching development tag after committing the snapshot to that branch.
 Developer synchronization tooling requires Python 3.12+. Publishing needs a PyPI trusted publisher for
 `LorenEteval/sing-tun-python`, workflow `deploy-pypi.yml`, environment `deploy-pypi`, and the protected GitHub environment.
 

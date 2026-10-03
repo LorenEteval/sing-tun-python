@@ -13,6 +13,7 @@ import (
 	"github.com/sagernet/gvisor/pkg/tcpip/link/channel"
 	"github.com/sagernet/gvisor/pkg/tcpip/stack"
 	tun "github.com/sagernet/sing-tun"
+	"github.com/sagernet/sing/common/buf"
 )
 
 // Private in-memory test endpoint; never wraps a production TUN.
@@ -113,14 +114,35 @@ type memoryTun struct {
 	input, output chan []byte
 	done          chan struct{}
 	once          sync.Once
+	goTun         *tun.MemoryTun
 }
 
 func newMemoryTun() *memoryTun {
-	return &memoryTun{make(chan []byte, 256), make(chan []byte, 256), make(chan struct{}), sync.Once{}}
+	return &memoryTun{input: make(chan []byte, 256), output: make(chan []byte, 256), done: make(chan struct{})}
 }
-func (m *memoryTun) Name() (string, error)                { return "memory", nil }
-func (m *memoryTun) Start() error                         { return nil }
-func (m *memoryTun) Close() error                         { m.once.Do(func() { close(m.done) }); return nil }
+
+// Upstream's own in-memory device exercises the new stack without host changes.
+func (m *memoryTun) enableGo(mtu int) {
+	m.goTun = tun.NewMemoryTun(tun.MemoryTunOptions{MTU: mtu, Outbound: func(packets []*buf.Buffer) {
+		defer buf.ReleaseMulti(packets)
+		for _, packet := range packets {
+			select {
+			case m.output <- append([]byte(nil), packet.Bytes()...):
+			case <-m.done:
+				return
+			}
+		}
+	}})
+}
+func (m *memoryTun) Name() (string, error) { return "memory", nil }
+func (m *memoryTun) Start() error          { return nil }
+func (m *memoryTun) Close() error {
+	m.once.Do(func() { close(m.done) })
+	if m.goTun != nil {
+		return m.goTun.Close()
+	}
+	return nil
+}
 func (m *memoryTun) UpdateRouteOptions(tun.Options) error { return nil }
 func (m *memoryTun) Read(p []byte) (int, error) {
 	select {
@@ -140,6 +162,16 @@ func (m *memoryTun) Write(p []byte) (int, error) {
 	}
 }
 func (m *memoryTun) inject(ctx context.Context, p []byte) error {
+	if m.goTun != nil {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		n, err := m.goTun.WritePackets([][]byte{p})
+		if err == nil && n != 1 {
+			return io.ErrShortWrite
+		}
+		return err
+	}
 	select {
 	case m.input <- append([]byte(nil), p...):
 		return nil

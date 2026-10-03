@@ -34,7 +34,7 @@ type Config struct {
 }
 
 func parseConfig(raw []byte) (Config, error) {
-	c := Config{Stack: "gvisor", LogLevel: "error", MaxSessions: 1024, UDPTimeout: 60, ConnectTimeout: 10, TCPIdleTimeout: 300}
+	c := Config{Stack: "go", LogLevel: "error", MaxSessions: 1024, UDPTimeout: 60, ConnectTimeout: 10, TCPIdleTimeout: 300}
 	d := json.NewDecoder(bytes.NewReader(raw))
 	d.DisallowUnknownFields()
 	if err := d.Decode(&c); err != nil {
@@ -148,7 +148,7 @@ func decodeOptions(raw json.RawMessage, target any) error {
 }
 
 func availableStack(s string) bool {
-	return (runtime.GOOS == "windows" || runtime.GOOS == "linux" || runtime.GOOS == "darwin") && (s == "" || s == "gvisor" || s == "system" || s == "mixed")
+	return (runtime.GOOS == "windows" || runtime.GOOS == "linux" || runtime.GOOS == "darwin") && (s == "" || s == "go" || s == "gvisor" || s == "system" || s == "mixed")
 }
 func seconds(s float64) time.Duration { return time.Duration(s * float64(time.Second)) }
 

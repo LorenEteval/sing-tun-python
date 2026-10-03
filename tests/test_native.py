@@ -32,7 +32,10 @@ except ImportError:
 
 @unittest.skipIf(_native is None, "build/install the native extension first")
 class NativeTests(unittest.TestCase):
+    default_stack = "go"
+
     def engine(self, fixture, **options):
+        options.setdefault("stack", self.default_stack)
         c = Config(proxy="socks5://%s:%s" % fixture.endpoint, **options)
         e = _native.Engine(c._json(), True)
         e.start()
@@ -40,6 +43,7 @@ class NativeTests(unittest.TestCase):
         return e
 
     def test_validation_redacts_and_capabilities(self):
+        self.assertEqual(Config(proxy="socks5://127.0.0.1:1").stack, "go")
         for options in (
             {"tun_options": {"MTU": 1}},
             {"stack": "lwip"},
@@ -57,7 +61,9 @@ class NativeTests(unittest.TestCase):
         self.assertNotIn("secret", str(raised.exception))
         self.assertNotIn("username", str(raised.exception))
         if sys.platform == "win32":
-            self.assertEqual(capabilities()["stacks"], ("gvisor", "system", "mixed"))
+            self.assertEqual(
+                capabilities()["stacks"], ("go", "gvisor", "system", "mixed")
+            )
 
     def test_upstream_option_passthrough(self):
         # Accept native routing/DNS/stack choices without starting a host device.
@@ -334,10 +340,17 @@ class NativeTests(unittest.TestCase):
             e.inject(
                 packet("fd00::2", "2001:db8::9", 0, b"\x11\0" + b"\0" * 6 + raw[40:])
             )
-            response = e.receive(3000)
-            self.assertTrue(response)
-            self.assertEqual(unpack(response)[3], payload6)
-            self.assertEqual([item[2] for item in fixture.seen], [payload, payload6])
+            if self.default_stack == "go":
+                # The pinned Go parser rejects IPv6 option headers upstream.
+                self.assertFalse(e.receive(300))
+                self.assertEqual([item[2] for item in fixture.seen], [payload])
+            else:
+                response = e.receive(3000)
+                self.assertTrue(response)
+                self.assertEqual(unpack(response)[3], payload6)
+                self.assertEqual(
+                    [item[2] for item in fixture.seen], [payload, payload6]
+                )
 
     def test_udp_bound_and_idle_timeout(self):
         with SocksFixture() as fixture:
@@ -362,6 +375,12 @@ class NativeTests(unittest.TestCase):
             self.assertTrue(fixture.udp_response_sent.wait(3), "no SOCKS UDP reply")
             self.assertFalse(e.receive(300))
             self.assertEqual(fixture.seen, [("udp", ("198.19.0.9", 53), b"query")])
+
+
+class GVisorNativeTests(NativeTests):
+    """Retain native forwarding coverage for the previous userspace stack."""
+
+    default_stack = "gvisor"
 
 
 if __name__ == "__main__":

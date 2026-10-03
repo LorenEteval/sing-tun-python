@@ -47,7 +47,12 @@ func newEngine(c Config, memory bool) *Engine {
 	e := &Engine{cfg: c, ctx: ctx, cancel: cancel, state: "created", done: make(chan struct{}), openDevice: openHostTun, makeStack: managedStack}
 	if memory {
 		e.fake = newMemoryTun()
-		e.openDevice = func(Config) (tun.Tun, error) { return newPacketDevice(e, e.fake), nil }
+		if c.Stack == "" || c.Stack == "go" {
+			e.fake.enableGo(int(c.TunOptions.MTU))
+			e.openDevice = func(Config) (tun.Tun, error) { return e.fake.goTun, nil }
+		} else {
+			e.openDevice = func(Config) (tun.Tun, error) { return newPacketDevice(e, e.fake), nil }
+		}
 	}
 	return e
 }
@@ -80,8 +85,8 @@ func (e *Engine) Start() error {
 	e.state = "starting"
 	e.mu.Unlock()
 	err := safeCall(func() error {
-		if e.fake != nil && e.cfg.Stack != "gvisor" {
-			return errors.New("memory TUN supports only gvisor")
+		if e.fake != nil && e.cfg.Stack != "gvisor" && e.cfg.Stack != "go" && e.cfg.Stack != "" {
+			return errors.New("memory TUN supports go and gvisor")
 		}
 		cfg := e.cfg
 		cfg.TunOptions.Logger = engineLogger{e}
@@ -192,6 +197,10 @@ func (e *Engine) Stop() {
 func (e *Engine) cleanup() {
 	e.initMu.Lock()
 	defer e.initMu.Unlock()
+	if e.fake != nil && e.fake.goTun != nil {
+		// Unblock the diagnostic outbound callback before waiting for the stack.
+		e.fake.Close()
+	}
 	// Close the device first to unblock readers. No lifecycle lock covers callbacks.
 	var errs []error
 	if e.handler != nil {

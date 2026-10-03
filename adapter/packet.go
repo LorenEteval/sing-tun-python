@@ -28,16 +28,10 @@ func (c *validatedUDP) Read(p []byte) (int, error) {
 // CopyPacket sizes pooled buffers from the writer's headroom interfaces. Do
 // not hide them behind deadline wrappers or SOCKS cannot prepend its header.
 func (c *idlePacket) FrontHeadroom() int {
-	if p, ok := c.PacketConn.(N.FrontHeadroom); ok {
-		return p.FrontHeadroom()
-	}
-	return 0
+	return N.CalculateFrontHeadroom(c.PacketConn)
 }
 func (c *idlePacket) RearHeadroom() int {
-	if p, ok := c.PacketConn.(N.RearHeadroom); ok {
-		return p.RearHeadroom()
-	}
-	return 0
+	return N.CalculateRearHeadroom(c.PacketConn)
 }
 
 func (c *idlePacket) ReadPacket(b *buf.Buffer) (M.Socksaddr, error) {
