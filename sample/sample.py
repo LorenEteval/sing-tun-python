@@ -15,8 +15,10 @@ def main():
             pathlib.Path(sing_tun.__file__).resolve().parent
             != (args.outside / "sing_tun").resolve()
         )
-    assert sing_tun.__upstream_version__.startswith("v")
-    assert "v" + sing_tun.__version__ == sing_tun.__upstream_version__
+    if ".dev" in sing_tun.__version__:
+        assert sing_tun.__upstream_version__ == "dev"
+    else:
+        assert "v" + sing_tun.__version__ == sing_tun.__upstream_version__
     assert len(sing_tun.__upstream_commit__) == 40
     if args.outside:
         for attribute, filename in (

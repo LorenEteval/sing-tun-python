@@ -10,11 +10,11 @@ on:
         required: false
         type: string
       release_tag:
-        description: Matching upstream tag to create after successful builds
+        description: Package release tag to create after successful builds
         required: false
         type: string
       upstream_tag:
-        description: Expected upstream sing-tun tag for the release
+        description: Expected upstream sing-tun tag or dev reference
         required: false
         type: string
   workflow_call:
@@ -282,7 +282,7 @@ jobs:
       ${{ !cancelled() && needs.store.result == 'success' &&
           github.repository == 'LorenEteval/sing-tun-python' &&
           github.event_name != 'pull_request' &&
-          ((github.ref == 'refs/heads/main' && inputs.release_tag != '') ||
+          (((github.ref == 'refs/heads/main' || github.ref == 'refs/heads/codex/development') && inputs.release_tag != '') ||
            (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) }}
     needs: store
     runs-on: ubuntu-24.04
@@ -303,12 +303,7 @@ jobs:
         env:
           CHECKOUT_REF: ${{ inputs.checkout_ref }}
         run: |
-          git fetch origin main
-          git merge-base --is-ancestor HEAD origin/main
-          if [[ -n "$CHECKOUT_REF" ]]; then
-            [[ "$CHECKOUT_REF" =~ ^[0-9a-f]{40}$ ]]
-            [[ "$(git rev-parse HEAD)" == "$CHECKOUT_REF" ]]
-          fi
+          python scripts/sync-sing-tun.py guard-commit --checkout-ref "$CHECKOUT_REF"
       - name: Validate new release target
         if: inputs.release_tag != ''
         env:
@@ -394,5 +389,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.finalize-release.outputs.tag }}
         run: |
-          gh release create "$RELEASE_TAG" --repo '${{ github.repository }}' --verify-tag --title "$RELEASE_TAG" --notes-file release-notes.md
+          flags=()
+          if [[ "$(cat UPSTREAM_VERSION)" == 'dev' ]]; then
+            flags+=(--prerelease --latest=false)
+          fi
+          gh release create "$RELEASE_TAG" --repo '${{ github.repository }}' --verify-tag --title "$RELEASE_TAG" --notes-file release-notes.md "${flags[@]}"
           gh release upload "$RELEASE_TAG" dist/* --repo '${{ github.repository }}'

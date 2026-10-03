@@ -10,15 +10,21 @@ import stat
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
+STABLE_VERSION = r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
+
+
 def package_version(root=ROOT):
     version = (root / "VERSION").read_text().strip()
     upstream = (root / "UPSTREAM_VERSION").read_text().strip()
-    if (
-        re.fullmatch(r"v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", upstream)
-        is None
-        or upstream != "v" + version
-    ):
+    development = re.fullmatch(STABLE_VERSION + r"\.dev(?:0|[1-9]\d*)", version)
+    if development:
+        if upstream != "dev":
+            raise RuntimeError("Development VERSION requires UPSTREAM_VERSION=dev")
+    elif not re.fullmatch(STABLE_VERSION, version) or upstream != "v" + version:
         raise RuntimeError("VERSION must match the stable tag in UPSTREAM_VERSION")
+    commit = (root / "UPSTREAM_COMMIT").read_text().strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise RuntimeError("UPSTREAM_COMMIT must be an exact commit")
     return version
 
 

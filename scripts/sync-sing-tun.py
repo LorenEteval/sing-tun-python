@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synchronize the vendored sing-tun source with an exact stable release."""
+"""Synchronize stable tags and verify or publish pinned development snapshots."""
 
 from __future__ import annotations
 
@@ -39,6 +39,9 @@ UPSTREAM_VERSION_PATTERN = re.compile(
     r"v(?P<version>(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))\Z"
 )
 COMMIT_PATTERN = re.compile(r"[0-9a-f]{40}\Z")
+DEVELOPMENT_VERSION_PATTERN = re.compile(
+    r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.dev(?:0|[1-9]\d*)\Z"
+)
 
 
 class SyncError(RuntimeError):
@@ -121,6 +124,30 @@ def current_package_version() -> str:
         raise SyncError("VERSION does not match UPSTREAM_VERSION")
 
     return version
+
+
+def current_release_version() -> str:
+    version = read_required(VERSION_FILE)
+    if DEVELOPMENT_VERSION_PATTERN.fullmatch(version):
+        if read_required(UPSTREAM_VERSION_FILE) != "dev":
+            raise SyncError("Development VERSION requires UPSTREAM_VERSION=dev")
+        current_upstream_commit()
+        return version
+    return current_package_version()
+
+
+def current_upstream_reference() -> str:
+    version = current_release_version()
+    if DEVELOPMENT_VERSION_PATTERN.fullmatch(version):
+        return "dev"
+    return current_upstream_tag()
+
+
+def release_provenance() -> str:
+    reference = current_upstream_reference()
+    if reference == "dev":
+        return f"dev ({current_upstream_commit()})"
+    return reference
 
 
 def package_version_for_upstream(tag: str) -> str:
@@ -323,7 +350,9 @@ def write_github_output(path: pathlib.Path | None, values: dict[str, str]) -> No
 def upstream_checkout(
     tag: str, supplied_repository: pathlib.Path | None = None
 ) -> Iterator[UpstreamCheckout]:
-    parse_upstream_version(tag)
+    exact_commit = COMMIT_PATTERN.fullmatch(tag) is not None
+    if not exact_commit:
+        parse_upstream_version(tag)
 
     if supplied_repository is not None:
         repository = supplied_repository.resolve()
@@ -342,7 +371,14 @@ def upstream_checkout(
         run(["git", "init", "--quiet"], cwd=repository)
         run(["git", "remote", "add", "origin", UPSTREAM_URL], cwd=repository)
         run(
-            ["git", "fetch", "--quiet", "--depth=1", "origin", f"refs/tags/{tag}"],
+            [
+                "git",
+                "fetch",
+                "--quiet",
+                "--depth=1",
+                "origin",
+                tag if exact_commit else f"refs/tags/{tag}",
+            ],
             cwd=repository,
         )
         commit = str(
@@ -507,13 +543,15 @@ def verify_vendor(checkout: UpstreamCheckout) -> None:
 
 
 def verify_command(args: argparse.Namespace) -> None:
-    current_package_version()
-    tag = args.tag or current_upstream_tag()
+    current_release_version()
+    reference = current_upstream_reference()
+    if reference == "dev" and args.tag is not None:
+        raise SyncError("Development verification uses the pinned commit, not a tag")
+    tag = args.tag or (current_upstream_commit() if reference == "dev" else reference)
     with upstream_checkout(tag, args.upstream_dir) as checkout:
         if (
-            tag == current_upstream_tag()
-            and checkout.commit != current_upstream_commit()
-        ):
+            reference == "dev" or tag == reference
+        ) and checkout.commit != current_upstream_commit():
             raise SyncError(
                 f"Upstream tag {tag} resolved to {checkout.commit}, "
                 f"not pinned commit {current_upstream_commit()}"
@@ -750,15 +788,15 @@ def check_release(args: argparse.Namespace) -> None:
 
 
 def guard_release(args: argparse.Namespace) -> None:
-    package_version = current_package_version()
-    expected_release_tag = downstream_tag(package_version)
+    package_version = current_release_version()
+    expected_release_tag = f"v{package_version}"
     if args.release_tag != expected_release_tag:
         raise SyncError(
             f"Release tag {args.release_tag} does not match {VERSION_FILE.name} "
             f"({package_version})"
         )
 
-    upstream_tag = current_upstream_tag()
+    upstream_tag = current_upstream_reference()
     if args.upstream_tag is not None and args.upstream_tag != upstream_tag:
         raise SyncError(
             f"Requested upstream tag {args.upstream_tag} does not match "
@@ -789,7 +827,7 @@ def guard_release(args: argparse.Namespace) -> None:
     if state["pypi"]:
         raise SyncError(f"PyPI version {package_version} already exists unexpectedly")
 
-    mappings = mapped_downstream_releases(upstream_tag)
+    mappings = mapped_downstream_releases(release_provenance())
     conflicting = sorted(set(mappings) - {args.release_tag})
     if conflicting:
         raise SyncError(
@@ -799,8 +837,22 @@ def guard_release(args: argparse.Namespace) -> None:
     print(f"Release target {args.release_tag} is available for upstream {upstream_tag}")
 
 
+def guard_commit(args: argparse.Namespace) -> None:
+    current_release_version()
+    branch = "codex/development" if current_upstream_reference() == "dev" else "main"
+    head = str(run(["git", "rev-parse", "HEAD^{commit}"])).strip()
+    if args.checkout_ref:
+        if (
+            COMMIT_PATTERN.fullmatch(args.checkout_ref) is None
+            or args.checkout_ref != head
+        ):
+            raise SyncError("Checkout ref must be the exact checked out commit")
+    run(["git", "fetch", "origin", f"refs/heads/{branch}:refs/remotes/origin/{branch}"])
+    run(["git", "merge-base", "--is-ancestor", head, f"origin/{branch}"])
+
+
 def release_notes() -> str:
-    return f"Corresponds to sing-tun {current_upstream_tag()}\n"
+    return f"Corresponds to sing-tun {release_provenance()}\n"
 
 
 def release_notes_command(args: argparse.Namespace) -> None:
@@ -838,6 +890,12 @@ def parser() -> argparse.ArgumentParser:
     guard.add_argument("--upstream-tag")
     guard.add_argument("--allow-existing-tag", action="store_true")
     guard.set_defaults(handler=guard_release)
+
+    trusted = commands.add_parser(
+        "guard-commit", help="verify release branch and exact commit"
+    )
+    trusted.add_argument("--checkout-ref")
+    trusted.set_defaults(handler=guard_commit)
 
     notes = commands.add_parser(
         "release-notes", help="write release correspondence metadata"

@@ -95,6 +95,76 @@ def args(upstream, tag="v0.10.0"):
 
 
 class SyncTests(unittest.TestCase):
+    def test_development_provenance_and_stable_sync_isolation(self):
+        with fixture() as (upstream, project):
+            write(project, "VERSION", "0.9.7.dev0\n")
+            write(project, "UPSTREAM_VERSION", "dev\n")
+            self.assertEqual(sync.current_release_version(), "0.9.7.dev0")
+            self.assertEqual(sync.current_upstream_reference(), "dev")
+            pin = sync.current_upstream_commit()
+            self.assertEqual(
+                sync.release_notes(), f"Corresponds to sing-tun dev ({pin})\n"
+            )
+            # Verification uses the recorded SHA even when dev/HEAD has moved.
+            sync.verify_command(argparse.Namespace(tag=None, upstream_dir=upstream))
+            commit(project)
+            with mock.patch.object(
+                sync, "stable_release"
+            ) as discover, self.assertRaises(sync.SyncError):
+                sync.check_release(argparse.Namespace(tag=None, github_output=None))
+            discover.assert_not_called()
+            with self.assertRaises(sync.SyncError):
+                sync.sync_command(args(upstream))
+            with self.assertRaises(sync.SyncError):
+                sync.verify_command(
+                    argparse.Namespace(tag="v0.9.6", upstream_dir=upstream)
+                )
+            write(project, "UPSTREAM_VERSION", "v0.9.6\n")
+            with self.assertRaisesRegex(sync.SyncError, "requires"):
+                sync.current_release_version()
+            write(project, "UPSTREAM_VERSION", "dev\n")
+            write(project, "UPSTREAM_COMMIT", "dev\n")
+            with self.assertRaisesRegex(sync.SyncError, "commit"):
+                sync.current_release_version()
+
+    def test_development_release_target_and_mapping(self):
+        empty = {"tag": False, "release": False, "pypi": False}
+        with fixture() as (upstream, project), mock.patch.object(
+            sync, "published_state", return_value=empty
+        ), mock.patch.object(
+            sync, "mapped_downstream_releases", return_value=[]
+        ) as mappings:
+            write(project, "VERSION", "0.9.7.dev0\n")
+            write(project, "UPSTREAM_VERSION", "dev\n")
+            target = argparse.Namespace(
+                release_tag="v0.9.7.dev0", upstream_tag="dev", allow_existing_tag=False
+            )
+            sync.guard_release(target)
+            mappings.assert_called_with(f"dev ({sync.current_upstream_commit()})")
+            target.release_tag = "v0.9.7"
+            with self.assertRaisesRegex(sync.SyncError, "does not match"):
+                sync.guard_release(target)
+            target.release_tag = "v0.9.7.dev0"
+            target.upstream_tag = "v0.9.7"
+            with self.assertRaisesRegex(sync.SyncError, "does not match"):
+                sync.guard_release(target)
+
+    def test_development_release_requires_trusted_branch_and_exact_checkout(self):
+        with fixture() as (upstream, project):
+            write(project, "VERSION", "0.9.7.dev0\n")
+            write(project, "UPSTREAM_VERSION", "dev\n")
+            commit(project)
+            git(project, "branch", "codex/development")
+            git(project, "remote", "add", "origin", str(project))
+            head = git(project, "rev-parse", "HEAD")
+            sync.guard_commit(argparse.Namespace(checkout_ref=head))
+            with self.assertRaisesRegex(sync.SyncError, "exact"):
+                sync.guard_commit(argparse.Namespace(checkout_ref="codex/development"))
+            write(project, "extra", "untrusted commit")
+            commit(project)
+            with self.assertRaises(sync.SyncError):
+                sync.guard_commit(argparse.Namespace(checkout_ref=None))
+
     def test_pagination_numeric_order_and_annotated_tag(self):
         calls = []
 
