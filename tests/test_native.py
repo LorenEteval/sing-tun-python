@@ -79,12 +79,14 @@ class NativeTests(unittest.TestCase):
         ):
             with self.subTest(options=options), self.assertRaises(ValueError):
                 Config(proxy="socks5://127.0.0.1:1", **options)
-        with SocksFixture() as fixture:
+        # Option forwarding must survive a handshake longer than the former
+        # 200 ms NAT idle limit. Idle expiry is tested separately below.
+        with SocksFixture(handshake_delay=0.4) as fixture:
             e = self.engine(
                 fixture,
                 tun_options={"MTU": 1400},
                 stack_options={
-                    "UDPTimeout": "200ms",
+                    "UDPTimeout": "5s",
                     "ICMPTimeout": "5s",
                     "UDPNATMax": 8,
                     "UDPMapping": 2,
@@ -92,7 +94,9 @@ class NativeTests(unittest.TestCase):
             )
             for dest in ("198.19.0.9", "198.19.0.10"):
                 e.inject(udp("198.18.0.2", dest, 45678, 53, b"native options"))
-                self.assertEqual(unpack(e.receive(3000))[3], b"native options")
+                response = e.receive(3000)
+                self.assertTrue(response, "no SOCKS UDP reply for " + dest)
+                self.assertEqual(unpack(response)[3], b"native options")
             self.assertEqual(json.loads(e.snapshot())["sessions"], 2)
             self.assertEqual(json.loads(e.snapshot())["device_name"], "memory")
 
