@@ -31,6 +31,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-require github.com/sagernet/sing-tun v0.9.7-0.20261002083955-3f8acd9da65b
+require github.com/sagernet/sing-tun v0.9.7-0.20261006124248-d769a7080ca2
 
 replace github.com/sagernet/sing-tun => ../sing-tun-go
